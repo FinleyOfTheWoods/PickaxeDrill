@@ -4,17 +4,17 @@
   },
   "supported_items": "#minecraft:pickaxes",
   "primary_items": "#minecraft:pickaxes",
-  "weight": 10,
-  "max_level": 5,
+  "weight": 1,
+  "max_level": 3,
   "min_cost": {
-    "base": 15,
+    "base": 28,
     "per_level_above_first": 9
   },
   "max_cost": {
     "base": 65,
     "per_level_above_first": 9
   },
-  "anvil_cost": 4,
+  "anvil_cost": 6,
   "slots": [
     "mainhand"
   ]
