@@ -29,11 +29,11 @@ public class DrillLogic {
             case SOUTH                  -> new DrillConfig( 1,Axis.Z, Axis.Y, Axis.X);
             case WEST                   -> new DrillConfig(-1,Axis.X, Axis.Y, Axis.Z);
             /// --- Upward Drilling ---
-            case UP_NORTH, UP_SOUTH     -> new DrillConfig(-1,Axis.Y, Axis.Z, Axis.X);
-            case UP_EAST, UP_WEST       -> new DrillConfig(-1,Axis.Y, Axis.X, Axis.Z);
+            case UP_NORTH, UP_SOUTH     -> new DrillConfig(1,Axis.Y, Axis.Z, Axis.X);
+            case UP_EAST, UP_WEST       -> new DrillConfig(1,Axis.Y, Axis.X, Axis.Z);
             /// --- Downward Drilling ---
-            case DOWN_NORTH, DOWN_SOUTH -> new DrillConfig( 1,Axis.Y, Axis.Z, Axis.X);
-            case DOWN_EAST, DOWN_WEST   -> new DrillConfig( 1,Axis.Y, Axis.X, Axis.Z);
+            case DOWN_NORTH, DOWN_SOUTH -> new DrillConfig( -1,Axis.Y, Axis.Z, Axis.X);
+            case DOWN_EAST, DOWN_WEST   -> new DrillConfig( -1,Axis.Y, Axis.X, Axis.Z);
         };
     }
 

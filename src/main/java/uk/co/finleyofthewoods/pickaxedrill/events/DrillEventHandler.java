@@ -5,26 +5,36 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.world.World;
 
+import java.util.Iterator;
 import java.util.Set;
 import java.util.HashSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.co.finleyofthewoods.pickaxedrill.enchantment.ModEnchantments;
 import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic;
 import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic.DrillDirection;
 import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic.DrillConfig;
 
 public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
     public static final Logger LOGGER = LoggerFactory.getLogger(DrillEventHandler.class);
+
+    // Queue to hold active drill tasks
+    private static final Set<DrillTask> TASKS = new HashSet<>();
+    // How many blocks to break per tick per task (adjust this to balance lag vs speed)
+    private static final int BLOCKS_PER_TICK = 10;
 
     private static final Set<Block> DENY_LIST = Set.of(
             Blocks.BEDROCK,
@@ -61,27 +71,24 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
         DrillDirection drillDirection = DrillLogic.getDrillDirection(direction, axis, pitch);
         DrillConfig drillConfig = DrillLogic.getDrillConfig(drillDirection);
 
-        /// RegistryEntry<Enchantment> enchantmentRegistryEntry = (RegistryEntry<Enchantment>) Enchantments.EFFICIENCY;
-        /// int enchantmentLevel = EnchantmentHelper.getLevel(enchantmentRegistryEntry, heldItemStack);
+        int enchantmentLevel = getDrillLevel(world, heldItemStack);
 
         /// Handle Drill Height
-        int heightEnchantmentLevel = 3;
         Axis heightAxis = drillConfig.height();
 
         /// Handle Drill Width
-        int widthEnchantmentLevel = 3;
         Axis widthAxis = drillConfig.width();
 
         /// Handle Drill Depth
         Axis depthAxis = drillConfig.depth();
         int directionSign = drillConfig.directionSign();
-        int depthEnchantmentLevel = 3;
 
-        LOGGER.debug("Drill Config: height={}, width={}, depth={}, directionSign={}", heightAxis, widthAxis, depthAxis, directionSign);
+        LOGGER.debug("Drill Config: enchantmentLevel={}, height={}, width={}, depth={}, directionSign={}",
+                enchantmentLevel, heightAxis, widthAxis, depthAxis, directionSign);
 
-        for (int h = -heightEnchantmentLevel; h <= heightEnchantmentLevel; h++) {
-            for (int w = -widthEnchantmentLevel; w <= widthEnchantmentLevel; w++) {
-                for (int d = 0; d <= depthEnchantmentLevel; d++) {
+        for (int h = -enchantmentLevel; h <= enchantmentLevel; h++) {
+            for (int w = -enchantmentLevel; w <= enchantmentLevel; w++) {
+                for (int d = 0; d <= enchantmentLevel; d++) {
                     int xOffset = 0;
                     int yOffset = 0;
                     int zOffset = 0;
@@ -108,39 +115,77 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
                 }
             }
         }
-        breakBlocks(world, player, BreakingPositions, heldItemStack);
+        TASKS.add(new DrillTask(world, player, BreakingPositions, heldItemStack.copy()));
+
         return true;
     }
 
-    private void breakBlocks(World world, PlayerEntity player, Set<BlockPos> blockPosSet, ItemStack heldItemStack) {
-        for (BlockPos pos : blockPosSet) {
-            BlockState state = world.getBlockState(pos);
-            LOGGER.debug("Checking block at {}, {}", pos, state.getBlock().toString());
+    private int getDrillLevel(World world, ItemStack stack) {
+        return world.getRegistryManager()
+                .getOrThrow(RegistryKeys.ENCHANTMENT)
+                .getOptional(ModEnchantments.DRILL)
+                .map(entry -> EnchantmentHelper.getLevel(entry, stack))
+                .orElse(0);
+    }
 
-            /// Check Hardness (Bedrock is -1.0f)
-            if (state.getHardness(world, pos) == -1.0f || DENY_LIST.contains(state.getBlock())) {
-                LOGGER.debug("Skipping block position: {}. Block: {}", pos, state.getBlock().toString());
-                continue;
+    public static void onTick(MinecraftServer server) {
+        if (TASKS.isEmpty()) return;
+
+        Iterator<DrillTask> iterator = TASKS.iterator();
+        while (iterator.hasNext()) {
+            DrillTask task = iterator.next();
+            if (task.isComplete()) {
+                iterator.remove();
+            } else {
+                task.process();
             }
+        }
+    }
 
-            /// Check Suitability
-            /// - Checks if the block is meant for a pickaxe (filters Wood/Dirt)
-            /// - Checks if the tool tier is high enough (e.g., Stone Pick vs. Diamond Ore)
-            if (!state.isIn(BlockTags.PICKAXE_MINEABLE) || !heldItemStack.isSuitableFor(state)) {
-                LOGGER.debug("Skipping block position: {}. Block: {}, Tool: {}", pos, state.getBlock().toString(), heldItemStack.getItem().toString());
-                continue;
-            }
+    private static class DrillTask {
+        private final World world;
+        private final PlayerEntity player;
+        private final ItemStack tool;
+        private final Iterator<BlockPos> blockIterator;
 
-            /// Check if the player can mine the block
-            if (heldItemStack.canMine(state, world, pos, player)) {
-                if (world.breakBlock(pos, true)) {
-                    LOGGER.debug("Block at {} broken, Block: {}", pos, state.getBlock().toString());
-                } else {
-                    LOGGER.warn("Failed to break block at {}, Block: {}", pos, state.getBlock().toString());
+        public DrillTask(World world, PlayerEntity player, Set<BlockPos> blocks, ItemStack tool) {
+            this.world = world;
+            this.player = player;
+            this.tool = tool;
+            this.blockIterator = blocks.iterator();
+        }
+
+        public boolean isComplete() {
+            return !blockIterator.hasNext();
+        }
+
+        public void process() {
+            int processedCount = 0;
+
+            // Process up to BLOCKS_PER_TICK or until iterator is empty
+            while (blockIterator.hasNext() && processedCount < BLOCKS_PER_TICK) {
+                BlockPos pos = blockIterator.next();
+                processedCount++;
+
+                BlockState state = world.getBlockState(pos);
+
+                // Re-check validation inside the tick loop as world state might have changed
+                if (state.isAir() || state.getHardness(world, pos) == -1.0f || DENY_LIST.contains(state.getBlock())) {
+                    continue;
+                }
+
+                if (!state.isIn(BlockTags.PICKAXE_MINEABLE) || !tool.isSuitableFor(state)) {
+                    continue;
+                }
+
+                if (tool.canMine(state, world, pos, player)) {
+                    BlockEntity blockEntity = world.getBlockEntity(pos);
+                    Block.dropStacks(state, world, pos, blockEntity, player, tool);
+                    if (world.breakBlock(pos, false)) {
+                        LOGGER.debug("Block at {} broken by drill task", pos);
+                    }
                 }
             }
         }
-        /// Clear the list of positions to free up memory.
-        blockPosSet.clear();
     }
 }
