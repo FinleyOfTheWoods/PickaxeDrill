@@ -25,7 +25,6 @@ import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic.DrillConfig;
 
 public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
     public static final Logger LOGGER = LoggerFactory.getLogger(DrillEventHandler.class);
-    private static final Set<BlockPos> BREAKING_POSITIONS = new HashSet<>();
 
     private static final Set<Block> DENY_LIST = Set.of(
             Blocks.BEDROCK,
@@ -39,11 +38,11 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
     public boolean beforeBlockBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity blockEntity) {
         ///  Check if the current position is already in the BREAKING_POSITIONS set,
         ///  or if the world is client-side.
-        if (world.isClient() || BREAKING_POSITIONS.contains(pos)) {
+        if (world.isClient()) {
             LOGGER.debug("Skipping block position: {}", pos);
             return true;
         }
-
+        Set<BlockPos> BreakingPositions = new HashSet<>();
         ///  Get the player's held item.
         ItemStack heldItemStack = player.getMainHandStack();
 
@@ -105,16 +104,16 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
 
                     /// Set position based on offsets and add to the list.
                     BlockPos newPosition = pos.add(xOffset, yOffset, zOffset);
-                    BREAKING_POSITIONS.add(newPosition);
+                    BreakingPositions.add(newPosition);
                 }
             }
         }
-        breakBlocks(world, player, heldItemStack);
+        breakBlocks(world, player, BreakingPositions, heldItemStack);
         return true;
     }
 
-    private void breakBlocks(World world, PlayerEntity player, ItemStack heldItemStack) {
-        for (BlockPos pos : BREAKING_POSITIONS) {
+    private void breakBlocks(World world, PlayerEntity player, Set<BlockPos> blockPosSet, ItemStack heldItemStack) {
+        for (BlockPos pos : blockPosSet) {
             BlockState state = world.getBlockState(pos);
             LOGGER.debug("Checking block at {}, {}", pos, state.getBlock().toString());
 
@@ -142,6 +141,6 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
             }
         }
         /// Clear the list of positions to free up memory.
-        BREAKING_POSITIONS.clear();
+        blockPosSet.clear();
     }
 }
