@@ -29,6 +29,7 @@ import uk.co.finleyofthewoods.pickaxedrill.enchantment.ModEnchantments;
 import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic;
 import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic.DrillDirection;
 import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic.DrillParams;
+import uk.co.finleyofthewoods.pickaxedrill.utils.LedgerLogger;
 
 public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
     public static final Logger LOGGER = LoggerFactory.getLogger(DrillEventHandler.class);
@@ -184,6 +185,7 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
                     Block.dropStacks(state, world, pos, blockEntity, player, tool);
                     if (world.breakBlock(pos, false)) {
                         LOGGER.debug("Block at {} broken by drill task", pos);
+                        LedgerLogger.insert(world, player, pos, state, null, blockEntity);
                     }
                     if (!player.isCreative()) {
                         /// Ensure the player is still holding the same tool type
