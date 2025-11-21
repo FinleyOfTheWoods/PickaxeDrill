@@ -6,6 +6,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.RegistryKeys;
@@ -23,18 +24,17 @@ import java.util.HashSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.co.finleyofthewoods.pickaxedrill.config.DrillConfig;
 import uk.co.finleyofthewoods.pickaxedrill.enchantment.ModEnchantments;
 import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic;
 import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic.DrillDirection;
-import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic.DrillConfig;
+import uk.co.finleyofthewoods.pickaxedrill.utils.DrillLogic.DrillParams;
 
 public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
     public static final Logger LOGGER = LoggerFactory.getLogger(DrillEventHandler.class);
 
     // Queue to hold active drill tasks
     private static final Set<DrillTask> TASKS = new HashSet<>();
-    // How many blocks to break per tick per task (adjust this to balance lag vs speed)
-    private static final int BLOCKS_PER_TICK = 10;
 
     private static final Set<Block> DENY_LIST = Set.of(
             Blocks.BEDROCK,
@@ -69,7 +69,7 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
         Direction direction = player.getHorizontalFacing(); // north, south, east, or west
 
         DrillDirection drillDirection = DrillLogic.getDrillDirection(direction, axis, pitch);
-        DrillConfig drillConfig = DrillLogic.getDrillConfig(drillDirection);
+        DrillParams drillConfig = DrillLogic.getDrillConfig(drillDirection);
 
         int enchantmentLevel = getDrillLevel(world, heldItemStack);
 
@@ -161,9 +161,10 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
 
         public void process() {
             int processedCount = 0;
+            int blocksPerTick = DrillConfig.get().blocksPerTick;
 
             // Process up to BLOCKS_PER_TICK or until iterator is empty
-            while (blockIterator.hasNext() && processedCount < BLOCKS_PER_TICK) {
+            while (blockIterator.hasNext() && processedCount < blocksPerTick) {
                 BlockPos pos = blockIterator.next();
                 processedCount++;
 
@@ -183,6 +184,16 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
                     Block.dropStacks(state, world, pos, blockEntity, player, tool);
                     if (world.breakBlock(pos, false)) {
                         LOGGER.debug("Block at {} broken by drill task", pos);
+                    }
+                    if (!player.isCreative()) {
+                        /// Ensure the player is still holding the same tool type
+                        ItemStack currentStack = player.getMainHandStack();
+                        if (currentStack.getItem() == tool.getItem()) {
+                            int damage = (int) Math.max(1, 1 * DrillConfig.get().durabilityFactor);
+                            currentStack.damage(damage, player, EquipmentSlot.MAINHAND);
+                        }
+                    } else {
+                        LOGGER.warn("Drill Enchant: {} swapped items. Damage not applied.", player.getName());
                     }
                 }
             }
