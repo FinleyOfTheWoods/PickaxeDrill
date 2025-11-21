@@ -14,26 +14,26 @@ public class DrillLogic {
         DOWN_NORTH, DOWN_SOUTH, DOWN_EAST, DOWN_WEST
     }
 
-    public record DrillConfig(
+    public record DrillParams(
             int directionSign, /// Direction (Negative = -1, Positive = 1) - Affects only the `depth` field
             Axis depth,        /// Depth
             Axis height,       /// Height
             Axis width         /// Width
     ) {}
 
-    public static DrillConfig getDrillConfig(DrillDirection direction) {
+    public static DrillParams getDrillConfig(DrillDirection direction) {
         return switch (direction) {
             /// --- Horizontal Drilling ---
-            case NORTH                  -> new DrillConfig(-1, Axis.Z, Axis.Y, Axis.X);
-            case EAST                   -> new DrillConfig( 1,Axis.X, Axis.Y, Axis.Z);
-            case SOUTH                  -> new DrillConfig( 1,Axis.Z, Axis.Y, Axis.X);
-            case WEST                   -> new DrillConfig(-1,Axis.X, Axis.Y, Axis.Z);
+            case NORTH                  -> new DrillParams(-1, Axis.Z, Axis.Y, Axis.X);
+            case EAST                   -> new DrillParams( 1,Axis.X, Axis.Y, Axis.Z);
+            case SOUTH                  -> new DrillParams( 1,Axis.Z, Axis.Y, Axis.X);
+            case WEST                   -> new DrillParams(-1,Axis.X, Axis.Y, Axis.Z);
             /// --- Upward Drilling ---
-            case UP_NORTH, UP_SOUTH     -> new DrillConfig(1,Axis.Y, Axis.Z, Axis.X);
-            case UP_EAST, UP_WEST       -> new DrillConfig(1,Axis.Y, Axis.X, Axis.Z);
+            case UP_NORTH, UP_SOUTH     -> new DrillParams(1,Axis.Y, Axis.Z, Axis.X);
+            case UP_EAST, UP_WEST       -> new DrillParams(1,Axis.Y, Axis.X, Axis.Z);
             /// --- Downward Drilling ---
-            case DOWN_NORTH, DOWN_SOUTH -> new DrillConfig( -1,Axis.Y, Axis.Z, Axis.X);
-            case DOWN_EAST, DOWN_WEST   -> new DrillConfig( -1,Axis.Y, Axis.X, Axis.Z);
+            case DOWN_NORTH, DOWN_SOUTH -> new DrillParams( -1,Axis.Y, Axis.Z, Axis.X);
+            case DOWN_EAST, DOWN_WEST   -> new DrillParams( -1,Axis.Y, Axis.X, Axis.Z);
         };
     }
 
