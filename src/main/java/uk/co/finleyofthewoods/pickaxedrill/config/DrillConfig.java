@@ -15,6 +15,7 @@ public class DrillConfig {
     private static DrillConfig INSTANCE;
 
     public boolean debug = false;
+    public boolean enabledLedgerSupport = false;
     public int blocksPerTick = 10;
     public double durabilityFactor = 0.20;
 

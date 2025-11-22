@@ -8,11 +8,13 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
@@ -64,6 +66,18 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
             return true;
         }
 
+        int enchantmentLevel = getDrillLevel(world, heldItemStack);
+        int durability = heldItemStack.getMaxDamage() - heldItemStack.getDamage();
+        int maxBlocksBroken = DrillLogic.getMaxBlocksBroken(enchantmentLevel);
+        int durabilityCost = DrillLogic.getDurabilityCost();
+
+        int requiredDurability = maxBlocksBroken * durabilityCost;
+        if (durability < requiredDurability) {
+            LOGGER.debug("Skipping block position: {}. Not enough durability to break blocks.", pos);
+            player.sendMessage(Text.literal("Not enough tool durability to drill."), true);
+            return true;
+        }
+
         ///  Get direction player is looking.
         Axis axis = player.getFacing().getAxis(); // x, y, or z
         float pitch = player.getPitch(); // -90 (UP) to 90 (DOWN)
@@ -72,7 +86,6 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
         DrillDirection drillDirection = DrillLogic.getDrillDirection(direction, axis, pitch);
         DrillParams drillConfig = DrillLogic.getDrillConfig(drillDirection);
 
-        int enchantmentLevel = getDrillLevel(world, heldItemStack);
 
         /// Handle Drill Height
         Axis heightAxis = drillConfig.height();
@@ -191,7 +204,7 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
                         /// Ensure the player is still holding the same tool type
                         ItemStack currentStack = player.getMainHandStack();
                         if (currentStack.getItem() == tool.getItem()) {
-                            int damage = (int) Math.max(1, 1 * DrillConfig.get().durabilityFactor);
+                            int damage = DrillLogic.getDurabilityCost();
                             currentStack.damage(damage, player, EquipmentSlot.MAINHAND);
                         }
                     } else {

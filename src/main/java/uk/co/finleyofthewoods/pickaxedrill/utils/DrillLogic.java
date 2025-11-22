@@ -2,8 +2,10 @@ package uk.co.finleyofthewoods.pickaxedrill.utils;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
+import uk.co.finleyofthewoods.pickaxedrill.config.DrillConfig;
 
 public class DrillLogic {
+    private static final int DURABILITY_COST = (int) Math.max(1, 1 * DrillConfig.get().durabilityFactor);
     /// Define drill directions
     public enum DrillDirection{
         /// --- Horizontal Drilling ---
@@ -89,5 +91,15 @@ public class DrillLogic {
             return DrillDirection.DOWN_WEST;
         }
         throw new IllegalArgumentException("Invalid directions provided. direction: "+direction+", axis: "+axis+", pitch: "+pitch);
+    }
+
+    public static int getMaxBlocksBroken(int enchantmentLevel) {
+        int zxBroken = ((enchantmentLevel * 2) + 1) * 2;
+        int yBroken = enchantmentLevel + 1;
+        return zxBroken * yBroken;
+    }
+
+    public static int getDurabilityCost() {
+        return DURABILITY_COST;
     }
 }

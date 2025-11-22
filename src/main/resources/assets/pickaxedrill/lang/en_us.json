@@ -1,4 +1,5 @@
 {
   "enchantment.pickaxedrill.drill": "Drill",
-  "enchantment.pickaxedrill.drill.desc": "Increases mining area."
+  "enchantment.pickaxedrill.drill.desc": "Increases mining area.",
+  "message.pickaxedrill.not_enough_durability": "Not enough tool durability to drill."
 }
