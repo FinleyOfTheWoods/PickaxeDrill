@@ -61,7 +61,7 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
 
         ///  Check if the held item is a Pickaxe, Drill enchants do not apply to any other Item type,
         ///  or if the held item is empty.
-        if (!heldItemStack.isIn(ItemTags.PICKAXES) || heldItemStack.isEmpty()) {
+        if (!heldItemStack.isIn(ItemTags.PICKAXES) || heldItemStack.isEmpty() || !heldItemStack.hasEnchantments()) {
             LOGGER.debug("Skipping block position: {}. Incorrect item type: {} or has no enchantments.", pos, heldItemStack.getItem().toString());
             return true;
         }
