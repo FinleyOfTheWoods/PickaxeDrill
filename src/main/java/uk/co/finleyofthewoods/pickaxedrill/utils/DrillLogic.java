@@ -39,19 +39,19 @@ public class DrillLogic {
 
     public static DrillDirection getDrillDirection(Direction direction, Axis axis, float pitch) {
         /// Return NORTH
-        if (axis == Axis.Z && direction == Direction.NORTH) {
+        if (axis != Axis.Y && direction == Direction.NORTH) {
             return DrillDirection.NORTH;
         }
         /// Return EAST
-        if (axis == Axis.X && direction == Direction.EAST) {
+        if (axis != Axis.Y && direction == Direction.EAST) {
             return DrillDirection.EAST;
         }
         /// Return SOUTH
-        if (axis == Axis.Z && direction == Direction.SOUTH) {
+        if (axis != Axis.Y && direction == Direction.SOUTH) {
             return DrillDirection.SOUTH;
         }
         /// Return WEST
-        if (axis == Axis.X && direction == Direction.WEST) {
+        if (axis != Axis.Y && direction == Direction.WEST) {
             return DrillDirection.WEST;
         }
 
