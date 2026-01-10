@@ -88,6 +88,6 @@ public class DrillLogic {
         if (axis == Axis.Y && direction == Direction.WEST && pitch > 0) {
             return DrillDirection.DOWN_WEST;
         }
-        throw new IllegalArgumentException("Invalid directions provided. direction: "+direction+", axis: "+axis+", pitch: "+pitch);
+        return null;
     }
 }

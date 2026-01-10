@@ -70,6 +70,7 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
         Direction direction = player.getHorizontalFacing(); // north, south, east, or west
 
         DrillDirection drillDirection = DrillLogic.getDrillDirection(direction, axis, pitch);
+        if (drillDirection == null) return false;
         DrillParams drillConfig = DrillLogic.getDrillConfig(drillDirection);
 
         int enchantmentLevel = getDrillLevel(world, heldItemStack);
