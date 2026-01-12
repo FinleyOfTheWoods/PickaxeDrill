@@ -14,6 +14,7 @@ public class DrillConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static DrillConfig INSTANCE;
 
+    public boolean enableLedger = false;
     public boolean debug = false;
     public int blocksPerTick = 10;
     public double durabilityFactor = 0.20;

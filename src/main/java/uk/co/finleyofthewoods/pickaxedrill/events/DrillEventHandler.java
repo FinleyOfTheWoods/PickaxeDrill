@@ -13,6 +13,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
@@ -88,6 +89,13 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
         LOGGER.debug("Drill Config: enchantmentLevel={}, height={}, width={}, depth={}, directionSign={}",
                 enchantmentLevel, heightAxis, widthAxis, depthAxis, directionSign);
 
+        double damage = Math.max(1, 1 * DrillConfig.get().durabilityFactor) * Math.pow(2 * enchantmentLevel + 1, 2) * (enchantmentLevel + 1);
+
+        if ((heldItemStack.getMaxDamage() - heldItemStack.getDamage()) <= damage) {
+            player.sendMessage(Text.literal("§cNot enough durability to Drill."), true);
+            return true;
+        }
+
         for (int h = -enchantmentLevel; h <= enchantmentLevel; h++) {
             for (int w = -enchantmentLevel; w <= enchantmentLevel; w++) {
                 for (int d = 0; d <= enchantmentLevel; d++) {
@@ -117,6 +125,8 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
                 }
             }
         }
+        if (BreakingPositions.isEmpty()) return true;
+        LOGGER.debug("Breaking positions: {}", BreakingPositions);
         TASKS.add(new DrillTask(world, player, BreakingPositions, heldItemStack.copy()));
 
         return true;
@@ -196,7 +206,7 @@ public class DrillEventHandler implements PlayerBlockBreakEvents.Before {
                             currentStack.damage(damage, player, EquipmentSlot.MAINHAND);
                         }
                     } else {
-                        LOGGER.warn("Drill Enchant: {} swapped items. Damage not applied.", player.getName());
+                        LOGGER.debug("Drill Enchant: {} is in creative, ignoring damage", player.getName());
                     }
                 }
             }
